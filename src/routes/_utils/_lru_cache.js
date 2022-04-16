@@ -7,7 +7,7 @@ const rateLimit = (options) => {
 	});
 
 	return {
-		check: (request, limit, token) => {
+		check: (event, limit, token) => {
 			const tokenCount = tokenCache.get(token) || [0];
 			if (tokenCount[0] === 0) {
 				tokenCache.set(token, tokenCount);
@@ -16,7 +16,7 @@ const rateLimit = (options) => {
 
 			const currentUsage = tokenCount[0];
 			console.log(
-				`Client ${request.headers['user-agent']} remaining calls: ${limit - currentUsage}`
+				`Client ${event.request.headers['user-agent']} remaining calls: ${limit - currentUsage}`
 			);
 			return currentUsage;
 		}
