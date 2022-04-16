@@ -6,9 +6,10 @@ const limiter = rateLimit({
 });
 
 export async function get(request) {
-	const limit = parseInt(import.meta.env.VITE_API_LIMIT, 10) || 20; // number of requests per minute
+	const limit = parseInt(import.meta.env.VITE_API_LIMIT, 10) || 50; // number of requests per minute
 	const currentUsage = await limiter.check(request, limit, 'CACHE_TOKEN');
 	const isRateLimited = currentUsage >= parseInt(limit, 10);
+	console.log(`Call ${currentUsage} / ${limit}: isRateLimited = ${isRateLimited}`);
 
 	if (isRateLimited) {
 		console.log('Rate limit exceeded...');
@@ -44,6 +45,7 @@ export async function get(request) {
 				body: await res.json()
 			};
 		} else {
+			console.log(`Request ${url} failed with ${res.status}`);
 			return {
 				status: res.status,
 				error: new Error(`Could not load ${url}`)
