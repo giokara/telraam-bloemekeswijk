@@ -1,4 +1,5 @@
 <script context="module">
+	import { zip } from 'lodash';
 	import { segmentProperties } from '../types';
 	import {
 		getSegmentState,
@@ -53,6 +54,7 @@
 	import { Switch } from 'spaper';
 	import Map from '$lib/components/Map.svelte';
 	import { MetricEnum } from '../types';
+	import { info } from 'spaper/components/Toast';
 	export let metric = MetricEnum.NONE;
 	let metricsAvailable = false;
 	let switch1 = false;
@@ -118,9 +120,10 @@
 	const timeEnd = new Date();
 	let timeStart = new Date(timeEnd);
 	timeStart.setDate(timeStart.getDate() - 7);
-	onMount(() => {
+	onMount(async () => {
 		timeStartCall = new Date();
-		const updateProperties = chainFetches(
+		console.log('Fetching historic data');
+		const speedResponses = await chainFetches(
 			snapshot.map(
 				(segment) =>
 					`/api/speed-${
@@ -129,40 +132,50 @@
 			),
 			1100,
 			3
-		)
-			.then((speeds) => {
-				const timeEndCall = new Date();
-				console.log(`Calls took ${timeEndCall.getTime() - timeStartCall.getTime()} ms`);
-				const updateProperties = speeds.map((speed) => aggregateTrafficSnapshotData(speed.report));
-				console.log(
-					`Unknown segments: `,
-					updateProperties.filter((p) => p.name === '').map((p) => p.segment_id)
-				);
-				const updatedSnapshot = JSON.parse(JSON.stringify(snapshot));
-				updateProperties.forEach((prop, idx) => {
-					if (prop.name !== '') {
-						updatedSnapshot[idx].properties = prop;
-					}
-				});
-				Object.values(MetricEnum)
-					.filter((m) => m.name !== MetricEnum.NONE.name)
-					.forEach((m) => {
-						const updatedMetrics = sortMetric(
-							updatedSnapshot.map((s) => s.properties.metrics?.[m.name]),
-							m.decreasing
-						);
-						updatedMetrics.forEach((um, i) => {
-							if (um) {
-								updatedSnapshot[i].properties.metrics[m.name] = um;
-							}
-						});
-					});
-				metricsAvailable = true;
-				snapshot = updatedSnapshot;
-			})
-			.catch((error) => {
-				console.log(error);
+		);
+		const success = speedResponses.every((resp) => resp.status_code === 200);
+		console.log(`Historic data fetched, success = ${success}`);
+		if (success) {
+			const timeEndCall = new Date();
+			console.log(`Calls took ${timeEndCall.getTime() - timeStartCall.getTime()} ms`);
+			const updateProperties = speedResponses.map((speed) =>
+				aggregateTrafficSnapshotData(speed.report)
+			);
+			console.log(
+				`Unknown segments: `,
+				updateProperties.filter((p) => p.name === '').map((p) => p.segment_id)
+			);
+			const updatedSnapshot = JSON.parse(JSON.stringify(snapshot));
+			updateProperties.forEach((prop, idx) => {
+				if (prop.name !== '') {
+					updatedSnapshot[idx].properties = prop;
+				}
 			});
+			Object.values(MetricEnum)
+				.filter((m) => m.name !== MetricEnum.NONE.name)
+				.forEach((m) => {
+					const updatedMetrics = sortMetric(
+						updatedSnapshot.map((s) => s.properties.metrics?.[m.name]),
+						m.decreasing
+					);
+					updatedMetrics.forEach((um, i) => {
+						if (um) {
+							updatedSnapshot[i].properties.metrics[m.name] = um;
+						}
+					});
+				});
+			metricsAvailable = true;
+			snapshot = updatedSnapshot;
+		} else {
+			const failedSegmentIds = zip(snapshot, speedResponses)
+				.filter(([info, speed]) => speed.status_code !== 200)
+				.map(([info, speed]) => info?.properties?.segment_id);
+			console.log(
+				`Failed to fetch historic data for ${failedSegmentIds.length} / ${
+					snapshot.length
+				} segments: ${failedSegmentIds.join(', ')}`
+			);
+		}
 	});
 	// $: segments = snapshot.features.map(x => x.properties.segment_id)
 </script>
