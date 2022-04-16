@@ -1,11 +1,12 @@
 <script context="module">
 	import { zip } from 'lodash';
-	import { segmentProperties } from '../types';
+	import { segmentProperties, SegmentStateEnum } from '../types';
 	import {
 		getSegmentState,
 		aggregateTrafficSnapshotData,
 		sortMetric,
-		chainFetches
+		chainFetches,
+delay
 	} from '../utils';
 	export async function load({ fetch }) {
 		const res = await fetch('/api/current_traffic');
@@ -122,7 +123,11 @@
 	timeStart.setDate(timeStart.getDate() - 7);
 	onMount(async () => {
 		timeStartCall = new Date();
+		if (snapshot.some(seg => seg.properties.name === '-')){
+			console.log(`Unknown name for segments: ${snapshot.filter(seg => seg.properties.name === '-').map(seg => seg.properties.segment_id)}`);
+		}
 		console.log('Fetching historic data');
+		await delay(1100);
 		const speedResponses = await chainFetches(
 			snapshot.map(
 				(segment) =>
@@ -131,7 +136,7 @@
 					}-${timeStart.toUTCString()}-${timeEnd.toUTCString()}`
 			),
 			1100,
-			3
+			1
 		);
 		const success = speedResponses.every((resp) => resp.status_code === 200);
 		console.log(`Historic data fetched, success = ${success}`);
