@@ -127,7 +127,7 @@ delay
 			console.log(`Unknown name for segments: ${snapshot.filter(seg => seg.properties.name === '-').map(seg => seg.properties.segment_id)}`);
 		}
 		console.log('Fetching historic data');
-		await delay(1100);
+		await delay(1000);
 		const speedResponses = await chainFetches(
 			snapshot.map(
 				(segment) =>
@@ -135,7 +135,7 @@ delay
 						segment.properties.segment_id
 					}-${timeStart.toUTCString()}-${timeEnd.toUTCString()}`
 			),
-			1100,
+			1000,
 			1
 		);
 		const success = speedResponses.every((resp) => resp.status_code === 200);
