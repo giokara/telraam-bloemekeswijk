@@ -6,7 +6,7 @@
 		aggregateTrafficSnapshotData,
 		sortMetric,
 		chainFetches,
-delay
+		delay
 	} from '../utils';
 	export async function load({ fetch }) {
 		const res = await fetch('/api/current_traffic');
@@ -123,8 +123,12 @@ delay
 	timeStart.setDate(timeStart.getDate() - 7);
 	onMount(async () => {
 		timeStartCall = new Date();
-		if (snapshot.some(seg => seg.properties.name === '-')){
-			console.log(`Unknown name for segments: ${snapshot.filter(seg => seg.properties.name === '-').map(seg => seg.properties.segment_id)}`);
+		if (snapshot.some((seg) => seg.properties.name === '-')) {
+			console.log(
+				`Unknown name for segments: ${snapshot
+					.filter((seg) => seg.properties.name === '-')
+					.map((seg) => seg.properties.segment_id)}`
+			);
 		}
 		console.log('Fetching historic data');
 		await delay(1000);
