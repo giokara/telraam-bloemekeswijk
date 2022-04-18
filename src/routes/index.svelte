@@ -1,6 +1,6 @@
 <script context="module">
 	import { zip } from 'lodash';
-	import { segmentProperties, SegmentStateEnum } from '../types';
+	import { segmentProperties } from '../types';
 	import {
 		getSegmentState,
 		aggregateTrafficSnapshotData,
